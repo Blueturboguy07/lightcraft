@@ -49,8 +49,11 @@ if [ "$IDENTITY" = "-" ]; then
   warn "macOS: ad-hoc signing (no MACOS_SIGN_IDENTITY); artifacts are not notarized"
 elif [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
   NOTARIZE=1
+elif [ -n "${NOTARY_PROFILE:-}" ]; then
+  # A local build: `xcrun notarytool store-credentials <profile>` holds the Apple ID in the keychain.
+  NOTARIZE=1
 else
-  warn "macOS: APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID incomplete; signed but not notarized"
+  warn "macOS: APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID (or NOTARY_PROFILE) incomplete; signed but not notarized"
 fi
 
 echo "==> LightCraft $VERSION for macOS ($ARCH), identity: $IDENTITY, notarize: $NOTARIZE"
@@ -86,15 +89,20 @@ sign() {
 
 notarize() {
   local file="$1" out id status
+  local auth=()
+  if [ -n "${NOTARY_PROFILE:-}" ]; then
+    auth=(--keychain-profile "$NOTARY_PROFILE")
+  else
+    auth=(--apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID")
+  fi
   echo "==> notarizing $(basename "$file") (this can take a few minutes)"
-  out="$(xcrun notarytool submit "$file" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
-    --team-id "$APPLE_TEAM_ID" --wait --timeout 1h --output-format json)" || true
+  out="$(xcrun notarytool submit "$file" "${auth[@]}" --wait --timeout 1h --output-format json)" || true
   echo "$out"
   id="$(printf '%s' "$out" | plutil -extract id raw -o - - 2>/dev/null || true)"
   status="$(printf '%s' "$out" | plutil -extract status raw -o - - 2>/dev/null || true)"
   if [ "$status" != "Accepted" ]; then
     if [ -n "$id" ]; then
-      xcrun notarytool log "$id" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" || true
+      xcrun notarytool log "$id" "${auth[@]}" || true
     fi
     echo "error: notarization of $(basename "$file") failed (status: ${status:-unknown})" >&2
     exit 1
