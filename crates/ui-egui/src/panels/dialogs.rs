@@ -271,6 +271,9 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
         // (nothing to download from in this build: the dialog explains the manual install)
         Dialog::SamModel { .. } if sam_by_hand(&app.session.segmenter) => "Install the SAM 3 Model",
         Dialog::SamModel { .. } => "Download the SAM 3 Model?",
+        Dialog::AiSetup => "AI",
+        Dialog::AiDescribe { ids } if ids.len() > 1 => "Describe Photos",
+        Dialog::AiDescribe { .. } => "Describe Photo",
         Dialog::About => "About LightCraft",
         Dialog::Shortcuts => "Keyboard Shortcuts",
     }
@@ -315,6 +318,8 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
             Dialog::FaceModel { .. } => 460.0,
             Dialog::LightroomCatalog { .. } => 440.0,
             Dialog::ManageEffects { .. } => 560.0,
+            Dialog::AiSetup => 480.0,
+            Dialog::AiDescribe { .. } => 520.0,
             _ => 380.0,
         })
         .show(ctx, |ui| {
@@ -1316,6 +1321,15 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                 }
                 Dialog::Shortcuts => crate::panels::keymap::body(app, ui, &t),
                 Dialog::Print => crate::print_view::body(app, ui, &t),
+                // AI through publik API or the person's own key: desktop only
+                #[cfg(not(target_arch = "wasm32"))]
+                Dialog::AiSetup => crate::ai::setup_body(app, ui),
+                #[cfg(not(target_arch = "wasm32"))]
+                Dialog::AiDescribe { ids } => crate::ai::describe_body(app, ui, ids),
+                #[cfg(target_arch = "wasm32")]
+                Dialog::AiSetup | Dialog::AiDescribe { .. } => {
+                    ui.label(egui::RichText::new(crate::i18n::tr("AI tools are in the desktop app.")).color(t.text_dim));
+                }
             });
             ui.add_space(4.0);
             // the confirm on the right with Cancel to its left (macOS and GNOME's order), filled with
@@ -1337,6 +1351,8 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                     Dialog::SamModel { .. } if sam_running || sam_installed || sam_nowhere => "Close",
                     Dialog::SamModel { .. } => "Not Now",
                     Dialog::LightroomResult { .. } => "Close",
+                    // (the results stay for the next time it opens)
+                    Dialog::AiDescribe { .. } => "Close",
                     _ => "Cancel",
                 };
                 let add_label;
@@ -1372,6 +1388,13 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                     Dialog::SamModel { error, .. } if error.is_some() || sam_failed => "Try Again",
                     Dialog::SamModel { .. } => "Download",
                     Dialog::RenamePerson { from, to, .. } if person_rename_plan(&app.session.catalog, from, to).needs_merge => "Merge",
+                    // the setup flow has buttons of its own
+                    Dialog::AiSetup => "",
+                    #[cfg(not(target_arch = "wasm32"))]
+                    Dialog::AiDescribe { .. } => {
+                        add_label = crate::ai::apply_label(app);
+                        add_label.as_str()
+                    }
                     _ if informational => "Close",
                     _ => "OK",
                 };
@@ -1391,7 +1414,9 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                             Dialog::DenoiseModel { accepted: false, .. } | Dialog::FaceModel { accepted: false, .. } | Dialog::SynchronizeFolder { counts: None, .. }
                         )
                             // smart-album rules that can't mean anything wait to be fixed
-                            && !matches!(&dlg, Dialog::SmartRules { id, rules, .. } if !rules.check_for(&app.session.catalog, id.map(lightcraft_catalog::AlbumId)).is_empty()));
+                            && !matches!(&dlg, Dialog::SmartRules { id, rules, .. } if !rules.check_for(&app.session.catalog, id.map(lightcraft_catalog::AlbumId)).is_empty())
+                            // Apply waits for Describe's results
+                            && !(matches!(&dlg, Dialog::AiDescribe { .. }) && !ai_can_apply(app)));
                 let primary = !informational && can_confirm && confirm_style(&dlg) == ConfirmStyle::Primary;
                 use crate::button::{Button, Kind};
                 // (each kind of dialog its own buttons: the keyboard's place doesn't carry from a
@@ -1470,6 +1495,7 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                         | Dialog::KeywordSet { .. }
                         | Dialog::SynchronizeFolder { .. }
                         | Dialog::SaveEffect { .. }
+                        | Dialog::AiDescribe { .. }
                 ) =>
             {
                 app.toast(ctx, e)
@@ -1935,7 +1961,22 @@ pub fn confirm_dialog(app: &mut LightcraftApp, dlg: &Dialog) -> Result<serde_jso
         Dialog::DeleteEffects { names } => app.run("mask.deleteEffect", json!({"names": names})),
         Dialog::RemoveFolder { path, disk, .. } => app.run("library.removeFolder", json!({"path": path, "disk": disk})),
         d @ Dialog::SynchronizeFolder { .. } => crate::sync::confirm(app, d),
-        Dialog::About | Dialog::Shortcuts | Dialog::Settings { .. } | Dialog::ManageEffects { .. } => Ok(serde_json::Value::Null),
+        Dialog::About | Dialog::Shortcuts | Dialog::Settings { .. } | Dialog::ManageEffects { .. } | Dialog::AiSetup => Ok(serde_json::Value::Null),
+        #[cfg(not(target_arch = "wasm32"))]
+        Dialog::AiDescribe { .. } => crate::ai::apply(app),
+        #[cfg(target_arch = "wasm32")]
+        Dialog::AiDescribe { .. } => Ok(serde_json::Value::Null),
+    }
+}
+
+/// Describe Photo has results to apply (never on the web, which has no AI tools).
+fn ai_can_apply(app: &LightcraftApp) -> bool {
+    #[cfg(not(target_arch = "wasm32"))]
+    return crate::ai::can_apply(app);
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = app;
+        false
     }
 }
 
@@ -2310,6 +2351,7 @@ fn only_shows(dlg: &Dialog) -> bool {
         dlg,
         Dialog::About
             | Dialog::Shortcuts
+            | Dialog::AiSetup
             | Dialog::Settings { .. }
             | Dialog::SystemInfo { .. }
             | Dialog::AllMetadata { .. }

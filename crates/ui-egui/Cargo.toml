@@ -27,6 +27,12 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# publik API as the zero-setup AI option (or the person's own key): provisioning, the credential
+# file, the calls and the setup flow (Photo ▸ AI ▸ Describe Photo…). Desktop only: it talks to the
+# network, through the system's curl, and only after the person sets it up and clicks.
+craft-publik = { path = "../../../craft-publik", features = ["egui"] }
+
 [dev-dependencies]
 # tests record why they skip (`cargo xtask ci` lists the skips)
 lightcraft-testkit = { workspace = true }

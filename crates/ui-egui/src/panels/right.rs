@@ -671,6 +671,12 @@ fn info(app: &mut LightcraftApp, ui: &mut egui::Ui, id: PhotoId) {
     divider(ui);
     let m = p.meta.clone();
     padded(ui, |ui| {
+        // AI: a title, a caption and keywords for the selection (desktop, where AI is on)
+        #[cfg(not(target_arch = "wasm32"))]
+        if crate::menus::ai_on(app) {
+            crate::ai::info_button(app, ui);
+            ui.add_space(6.0);
+        }
         for (label, key, value, lines) in [
             ("Title", "title", &m.title, 1),
             ("Caption", "caption", &m.caption, 2),

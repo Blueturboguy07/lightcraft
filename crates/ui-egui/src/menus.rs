@@ -262,6 +262,10 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     ("dialog.labelNames", "Edit Color Label Names…", None, ""),
     ("dialog.captureTime", "Edit Capture Time…", None, "Photo"),
     ("photo.tagFromTracklog", "Auto-Tag from Tracklog…", None, "Photo"),
+    // Photo ▸ AI (desktop): a title, a caption and keywords for the selected photos from an AI
+    // model, through publik API or the person's own key ({ids?}); and its settings
+    ("dialog.aiDescribe", "Describe Photo…", None, "Photo>AI"),
+    ("dialog.aiSettings", "AI Settings…", None, "Photo>AI"),
     ("app.exportPrevious", "Export with Previous", Some("Cmd+Alt+Shift+E"), "File"),
 ];
 
@@ -1327,6 +1331,20 @@ pub fn run_ui_command(app: &mut LightcraftApp, id: &str, p: &Value) -> Option<Re
             app.ui.dialog = Some(Dialog::LabelNames { names, save_as: String::new() });
             Ok(Value::Null)
         }
+        "dialog.aiDescribe" => {
+            #[cfg(not(target_arch = "wasm32"))]
+            let r = crate::ai::open_describe(app, p);
+            #[cfg(target_arch = "wasm32")]
+            let r = Err("AI tools are in the desktop app".to_string());
+            r
+        }
+        "dialog.aiSettings" => {
+            if cfg!(target_arch = "wasm32") {
+                return Some(Err("AI tools are in the desktop app".into()));
+            }
+            app.ui.dialog = Some(Dialog::Settings { tab: "ai".into() });
+            Ok(Value::Null)
+        }
         "dialog.rename" => {
             let template = p.get("template").and_then(Value::as_str).unwrap_or("{name}").to_string();
             app.ui.dialog = Some(Dialog::Rename { template, start: p.get("start").and_then(Value::as_u64).unwrap_or(1) as u32 });
@@ -2140,6 +2158,8 @@ pub fn ui_enabled(app: &LightcraftApp, id: &str) -> bool {
             app.session.active().is_some()
         }
         "photo.tagFromTracklog" => app.session.active().is_some() && app.services.pick_tracklog.is_some(),
+        "dialog.aiDescribe" => ai_on(app) && app.session.active().is_some(),
+        "dialog.aiSettings" => ai_on(app),
         "photo.editInPhotoCraft" | "photo.editInExternal" => app.session.active().is_some() && app.services.open_with.is_some(),
         "app.exportPrevious" => app.session.active().is_some() && app.session.last_export.is_some(),
         "dialog.pasteSettings" => app.session.active().is_some() && app.session.clipboard.is_some(),
@@ -2179,6 +2199,18 @@ pub fn ui_enabled(app: &LightcraftApp, id: &str) -> bool {
             app.session.selected().len() >= 2 && app.merge.final_task.is_none()
         }
         _ => true,
+    }
+}
+
+/// AI tools are on: the desktop app with a settings folder (`crate::ai`). Off on the web, in tests
+/// and in sessions that keep no settings.
+pub fn ai_on(app: &LightcraftApp) -> bool {
+    #[cfg(not(target_arch = "wasm32"))]
+    return app.ai.is_some();
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = app;
+        false
     }
 }
 

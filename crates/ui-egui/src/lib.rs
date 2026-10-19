@@ -6,6 +6,8 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod ai;
 pub mod album_picker;
 pub mod brush_live;
 pub mod button;
@@ -49,6 +51,8 @@ pub mod window_place;
 
 #[cfg(test)]
 mod tests_activity;
+#[cfg(test)]
+mod tests_ai;
 #[cfg(test)]
 mod tests_album_picker;
 #[cfg(test)]
@@ -478,6 +482,11 @@ pub struct LightcraftApp {
     pub library_problem: Option<panels::library_problem::LibraryProblem>,
     /// The activity stack shows every task, not just the first few ("+N more" was clicked).
     pub activity_expanded: bool,
+    /// AI through publik API or the person's own key (desktop only: Photo ▸ AI, Settings ▸ AI).
+    /// `None` until the desktop shell installs it, and in tests, headless sessions and sessions that
+    /// keep no settings, where no setup dialog may appear.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub ai: Option<ai::Ai>,
 }
 
 impl LightcraftApp {
@@ -557,6 +566,8 @@ impl LightcraftApp {
             library_problem: None,
             activity_expanded: false,
             model_setup: Default::default(),
+            #[cfg(not(target_arch = "wasm32"))]
+            ai: None,
         }
     }
 
@@ -1114,6 +1125,8 @@ impl LightcraftApp {
         lightroom_import::tick(self, ctx);
         recheck::tick(self);
         tasks::poll(self, ctx);
+        #[cfg(not(target_arch = "wasm32"))]
+        ai::frame(self, ctx);
         self.preview_build_status(ctx);
         self.save_status(ctx);
         self.slideshow_tick(ctx);

@@ -1236,6 +1236,14 @@ pub enum Dialog {
         remove_missing: bool,
         read_metadata: bool,
     },
+    /// AI: the setup flow (publik API or the person's own key), on the first launch and from
+    /// Settings ▸ AI. Desktop only (`crate::ai`).
+    AiSetup,
+    /// Photo ▸ AI ▸ Describe Photo…: a title, a caption and keywords for the photos `ids` from an
+    /// AI model, edited here and applied with `photo.setMeta`. Desktop only (`crate::ai`).
+    AiDescribe {
+        ids: Vec<u64>,
+    },
     About,
     Shortcuts,
 }

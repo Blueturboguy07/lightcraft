@@ -226,6 +226,26 @@ fn config_dir() -> Option<std::path::PathBuf> {
     lightcraft_engine::config::config_dir()
 }
 
+/// What publik needs to know about this build. The app token is public by design (it can only mint
+/// capped keys attributed to LightCraft) and lives at the repository root, so source builds carry
+/// it. AI settings (`ai.json`) go in `config_dir`, next to `ui.json`.
+fn app_info(config_dir: Option<std::path::PathBuf>) -> lightcraft_ui_egui::ai::AppInfo {
+    lightcraft_ui_egui::ai::AppInfo {
+        slug: "lightcraft",
+        name: "LightCraft",
+        version: env!("CARGO_PKG_VERSION"),
+        app_token: include_str!("../../../publik-app-token.txt"),
+        dialects: &["chat_completions"],
+        config_dir,
+    }
+}
+
+/// Where AI settings are kept: none (AI off) in a session that writes no settings (`--memory`,
+/// `LIGHTCRAFT_NO_PREFS`, tests and scripts), so no setup dialog appears there.
+fn ai_config_dir(in_memory: bool) -> Option<std::path::PathBuf> {
+    prefs_path().filter(|_| !in_memory).and_then(|_| config_dir())
+}
+
 /// The window at the size it was last used at, zoomed if it was (`window`), or at the usual size
 /// when nothing is remembered. A zoomed window is given the size it goes back to. Where it
 /// opens is the system's to say.
@@ -875,6 +895,13 @@ fn main() -> eframe::Result {
             _ => files.push(a),
         }
     }
+    // Builder check (publikhq.com/skills/setup.md): the built app provisions publik API for real
+    // and prints one line. The builder who runs it is the consent. Before the log file, so the
+    // check leaves none behind.
+    if std::env::var_os("PUBLIK_SELF_TEST").is_some() {
+        println!("{}", lightcraft_ui_egui::ai::self_test(&app_info(config_dir())));
+        return Ok(());
+    }
     // The log file: opened after the arguments, so `--version`, `--help` and a usage error leave
     // no file behind. Records logged until now are written to it first.
     let mut log_file = None;
@@ -995,6 +1022,16 @@ fn main() -> eframe::Result {
                 if let Some(notice) = gpu_crash {
                     app.ui.settings.gpu = false;
                     app.notices.push(notice);
+                }
+                // AI through publik API or the person's own key; the first launch asks. Not in a session
+                // that keeps no settings, and the first-launch dialog stays closed while an agent drives
+                // the app over `--control`.
+                if let Some(dir) = ai_config_dir(in_memory) {
+                    let mut ai = lightcraft_ui_egui::ai::Ai::new(app_info(Some(dir)));
+                    if control_port.is_some() {
+                        ai.skip_first_run();
+                    }
+                    app.ai = Some(ai);
                 }
                 if let Some(port) = control_port {
                     let rx = control_server::start(port, cc.egui_ctx.clone());

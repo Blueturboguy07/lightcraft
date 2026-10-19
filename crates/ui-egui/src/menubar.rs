@@ -215,6 +215,7 @@ const LAYOUT: &[(&str, &[&str])] = &[
             "dialog.rename",
             "dialog.captureTime",
             "photo.tagFromTracklog",
+            "@AI",
             "---",
             "album.removePhotos",
             "photo.delete",
@@ -300,6 +301,8 @@ fn host_supports(app: &LightcraftApp, id: &str) -> bool {
         "album.removePhotos" => in_normal_album(app) && !selection_deleted(app),
         // only where the trash is on screen
         "library.emptyRecentlyDeleted" => app.session.source == lightcraft_engine::LibrarySource::RecentlyDeleted,
+        // only where AI is on (the desktop app with a settings folder)
+        "dialog.aiDescribe" | "dialog.aiSettings" => crate::menus::ai_on(app),
         _ => true,
     }
 }
@@ -386,6 +389,7 @@ fn live_label(app: &LightcraftApp, id: &str, label: &str) -> String {
         "photo.delete" if n > 1 => crate::i18n::tr_format!("Delete {n} Photos", n = n),
         "photo.virtualCopy" if n > 1 => crate::i18n::tr_format!("Create {n} Virtual Copies", n = n),
         "dialog.rename" if n > 1 => crate::i18n::tr_format!("Rename {n} Photos…", n = n),
+        "dialog.aiDescribe" if n > 1 => format!("Describe {n} Photos…"),
         "app.showInFinder" => crate::i18n::tr(crate::menus::reveal_label()).to_string(),
         _ => label.to_string(),
     }
