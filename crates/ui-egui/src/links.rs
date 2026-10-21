@@ -47,7 +47,7 @@ mod tests {
             assert!(!label.is_empty());
             assert_eq!(url_of(id), Some(*url));
         }
-        assert!(APP_PAGE.ends_with(&format!("/apps/{APP}")));
-        assert!(GITHUB.ends_with(&format!("/storytold/{APP}")));
+        assert_eq!(APP_PAGE, format!("https://publikhq.com/{APP}"));
+        assert!(GITHUB.ends_with(&format!("/Blueturboguy07/{APP}")));
     }
 }
