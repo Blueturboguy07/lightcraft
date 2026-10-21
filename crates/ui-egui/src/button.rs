@@ -38,7 +38,7 @@ pub enum Size {
     /// 30 points: dialogs and panels.
     #[default]
     Medium,
-    /// 36 points: a page's one main action (the welcome, About's Discord link).
+    /// 36 points: a page's one main action (the welcome).
     Large,
 }
 

@@ -1,9 +1,7 @@
-//! Community and project links (Help menu, About dialog, top-bar Discord button).
+//! Community and project links (Help menu, About dialog).
 
 /// The app's id in ArtCraft URLs.
 pub const APP: &str = "lightcraft";
-/// The ArtCraft community Discord.
-pub const DISCORD: &str = "https://discord.gg/artcraft";
 /// The ArtCraft website.
 pub const WEBSITE: &str = "https://publikhq.com/adobe";
 /// This app's page on the ArtCraft website.
@@ -17,7 +15,6 @@ pub const HELP: &str = "https://github.com/Blueturboguy07/lightcraft/tree/main/d
 
 pub const LINKS: &[(&str, &str, &str)] = &[
     ("app.help", "LightCraft Help", HELP),
-    ("app.discord", "Join the ArtCraft Discord…", DISCORD),
     ("app.website", "LightCraft Website", APP_PAGE),
     ("app.github", "LightCraft on GitHub", GITHUB),
     ("app.artcraft", "ArtCraft Website", WEBSITE),

@@ -49,7 +49,7 @@ fn window_handle(app: &LightcraftApp, ui: &mut egui::Ui, content: Rect, margin_l
 pub fn show(app: &mut LightcraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     // room for the traffic lights; in full screen they are gone, and the sidebar button sits as far
-    // from the left edge as the Discord button from the right (12 margin + 4)
+    // from the left edge as the rightmost icon from the right (12 margin + 4)
     let left = match (app.integrated_titlebar, app.window_is_fullscreen) {
         (true, false) => 78,
         (true, true) => 16,
@@ -180,7 +180,6 @@ pub fn show(app: &mut LightcraftApp, ui: &mut egui::Ui) {
                 None => crate::i18n::tr("Import Photos…").to_string(),
             };
             for (id, icon, tip, cmd) in [
-                ("discord", Icon::Chat, "Join the ArtCraft community on Discord", "app.discord"),
                 ("cloud", Icon::Cloud, cloud_tip, ""),
                 ("help", Icon::Help, "Keyboard shortcuts", "app.shortcuts"),
                 ("share", Icon::Share, "Export", "dialog.export"),
