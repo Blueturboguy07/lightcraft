@@ -1080,7 +1080,7 @@ source = "git+https://github.com/storytold/craft-libs?rev=82a24b006eefa036b43c09
 [[package]]
 name = "craft-publik"
 version = "0.1.0"
-source = "git+https://github.com/Blueturboguy07/craft-publik?rev=1da0e89298f3552a5e74d1e8b47d865028e13580#1da0e89298f3552a5e74d1e8b47d865028e13580"
+source = "git+https://github.com/Blueturboguy07/craft-publik?rev=854bdf66e4d97cb19546fdb0ed0e258a20510f0d#854bdf66e4d97cb19546fdb0ed0e258a20510f0d"
 dependencies = [
  "egui",
  "serde",
