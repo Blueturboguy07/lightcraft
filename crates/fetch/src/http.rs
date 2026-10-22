@@ -601,6 +601,11 @@ mod tests_connect {
         let cancel = AtomicBool::new(false);
         // non-routable addresses: each either hangs until the deadline or fails at once, never longer
         let addrs: Vec<SocketAddr> = (1..=5).map(|i| format!("10.255.255.{i}:81").parse().unwrap()).collect();
+        // A tunnel (VPN, proxy) that answers for every address breaks the premise: nothing here hangs.
+        if std::net::TcpStream::connect_timeout(&addrs[0], Duration::from_millis(300)).is_ok() {
+            eprintln!("skipped: this network accepts connections to {}; the deadline test needs a black hole", addrs[0]);
+            return;
+        }
         let t = Instant::now();
         let r = connect_any("blackhole", &addrs, Instant::now() + Duration::from_millis(400), &limits(&cancel));
         assert!(r.is_err());
