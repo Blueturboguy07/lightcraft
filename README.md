@@ -625,6 +625,15 @@ And [**ArtCraft**](https://getartcraft.com/) itself, our AI image and video stud
 
 <br>
 
+## Usage counts
+
+publik's build of LightCraft sends two anonymous usage events to publik: `app_opened` (one for each launch)
+and `active_session` (every 30 minutes while the app runs). An event holds the app name, the app
+version, the operating system, the CPU type and a random install ID. It holds no file, no file name
+and no prompt. When this computer has a publik API key for LightCraft, the event carries that key, so publik
+counts the account one time. The `lightcraft-cli` tool and a `--memory` session send nothing. To turn it
+off, set `DO_NOT_TRACK=1` in the environment. Details: https://publikhq.com/skills/telemetry.md
+
 ## License and credits
 
 LightCraft is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
