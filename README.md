@@ -631,7 +631,8 @@ publik's build of LightCraft sends two anonymous usage events to publik: `app_op
 and `active_session` (every 30 minutes while the app runs). An event holds the app name, the app
 version, the operating system, the CPU type and a random install ID. It holds no file, no file name
 and no prompt. When this computer has a publik API key for LightCraft, the event carries that key, so publik
-counts the account one time. The `lightcraft-cli` tool and a `--memory` session send nothing. To turn it
+counts the account one time. A `--memory` session sends nothing. The `lightcraft-cli` tool sends the same events, at most one `app_opened` in 10 minutes and none for
+`--version` or `--help`; a detached copy of the tool does the send, so the tool does not wait. To turn it
 off, set `DO_NOT_TRACK=1` in the environment. Details: https://publikhq.com/skills/telemetry.md
 
 ## License and credits

@@ -14,6 +14,8 @@ path = "src/main.rs"
 workspace = true
 
 [dependencies]
+# publik's usage counts (src/publik_telemetry.rs): the HTTP client that file needs.
+ureq = "2"
 lightcraft-engine = { workspace = true }
 lightcraft-denoise = { workspace = true }
 lightcraft-sysmem = { workspace = true }
