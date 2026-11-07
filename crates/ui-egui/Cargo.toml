@@ -2,7 +2,7 @@
 name = "lightcraft-ui-egui"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.95"
+rust-version.workspace = true
 license.workspace = true
 description = "LightCraft egui frontend (Lightroom-style UI); swappable — nothing below depends on it (L5)"
 
@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 craft-ui = { workspace = true }
+craft-window = { workspace = true }
 lightcraft-geom = { workspace = true }
 lightcraft-meta = { workspace = true }
 lightcraft-color = { workspace = true }
@@ -23,6 +24,7 @@ lightcraft-engine = { workspace = true }
 lightcraft-slideshow = { workspace = true }
 lightcraft-preview = { workspace = true }
 egui = { workspace = true }
+egui_extras = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
@@ -31,16 +33,24 @@ log = { workspace = true }
 # publik API as the zero-setup AI option (or the person's own key): provisioning, the credential
 # file, the calls and the setup flow (Photo ▸ AI ▸ Describe Photo…). Desktop only: it talks to the
 # network, through the system's curl, and only after the person sets it up and clicks.
-craft-publik = { git = "https://github.com/Blueturboguy07/craft-publik", rev = "854bdf66e4d97cb19546fdb0ed0e258a20510f0d", features = ["egui"] }
+craft-update = { workspace = true }
+craft-publik = { git = "https://github.com/Blueturboguy07/craft-publik", rev = "7926858db80b68c988d6c325b5d287cbe74fc831", features = ["egui"] }
 
 [dev-dependencies]
 # tests record why they skip (`cargo xtask ci` lists the skips)
 lightcraft-testkit = { workspace = true }
+# The model-setup tests install and resume a real denoise model. Without this the engine's
+# `default_loader` is the "this build cannot run denoise models" stub when the package is tested
+# on its own (`cargo test -p lightcraft-ui-egui`); a workspace test only passed by feature
+# unification with the desktop app's default `denoise` feature.
+lightcraft-engine = { workspace = true, features = ["denoise"] }
 egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
 lightcraft-denoise = { workspace = true, features = ["runtime"] }
 lightcraft-codecs = { workspace = true }
 lightcraft-faces = { workspace = true }
 lightcraft-merge = { workspace = true }
+# a device for the GPU-resident view test (`render.rs`)
+pollster = { workspace = true }
 
 [build-dependencies]
 serde_json = { workspace = true }
