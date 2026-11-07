@@ -23,6 +23,9 @@ concurrency:
 jobs:
   git-sources:
     name: Git dependencies come from storytold
+    # publik's fork: never on a publik ref (a v*-publik* tag or branch), so no run can put files
+    # into a publik release.
+    if: ${{ !contains(github.ref, '-publik') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -64,6 +67,7 @@ jobs:
 
   release:
     needs: git-sources
+    if: ${{ !contains(github.ref, '-publik') }}
     # publik's trimmed copy of storytold/craft-common-actions (free macOS runner, Windows x64 only,
     # Linux and Flatpak off). Tracked at @main like upstream.
     uses: Blueturboguy07/craft-common-actions/.github/workflows/release.yml@main
