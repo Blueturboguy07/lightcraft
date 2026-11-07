@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: storytold/craft-fonts
-          ref: 3d9ab3a132ed0eff457e424226a435a901da30d3
+          ref: b076417b5880bd4154bd22f00695b1d28c6bea83
           path: craft-fonts
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
@@ -47,6 +47,16 @@ jobs:
         with:
           key: publik-build-macos-universal
           cache-on-failure: true
+      - name: Cargo.lock matches the manifests
+        run: cargo metadata --locked --format-version 1 > /dev/null
+      - name: Tests of publik's changes (AI step, links, title bar)
+        # The AI step (Photo > AI, Settings > AI, the Info panel button: crate::ai and tests_ai),
+        # publik's links and the title bar without the Discord icon. The job stops here if a port
+        # to a newer upstream broke them. Nothing leaves the runner: the AI tests use a local stand-in.
+        run: |
+          cargo test --locked -p lightcraft-ui-egui --lib -- \
+            ai::tests:: tests_ai:: links::tests:: \
+            tests::titlebar::full_screen_moves_the_left_buttons_into_the_traffic_lights_space
       - name: Build and package (ad-hoc signature, no notarization)
         run: |
           # The short commit, as publik's earlier builds carry it (<APP>_BUILD_SHA).
@@ -76,7 +86,7 @@ jobs:
             echo "commit=$(git rev-parse HEAD)"
             echo "build_sha=$(git rev-parse --short HEAD)"
             echo "publik_build=$(tr -d '[:space:]' < packaging/PUBLIK_BUILD)"
-            echo "fonts_ref=3d9ab3a132ed0eff457e424226a435a901da30d3"
+            echo "fonts_ref=b076417b5880bd4154bd22f00695b1d28c6bea83"
             echo "runner=$(sw_vers -productName) $(sw_vers -productVersion) $(uname -m)"
             echo "rustc=$(rustc -V)"
             echo "cargo=$(cargo -V)"
