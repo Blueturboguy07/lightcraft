@@ -66,13 +66,12 @@ pub(crate) fn blocks_input(app: &LightcraftApp) -> bool {
 }
 
 pub(crate) fn check(app: &mut LightcraftApp) -> Result<Value, String> {
+    // publik's build: Help ▸ Check for Updates… opens publik's listing, where publik's builds are.
+    // It never checks storytold's GitHub releases, so it never offers to replace this build with
+    // one that is not publik's (the check at start is off too: apps/lightcraft/src/main.rs).
     #[cfg(not(target_arch = "wasm32"))]
     {
-        app.updates_rt.check_requested = true;
-        if let Some(ctx) = &app.updates_rt.repaint {
-            ctx.request_repaint();
-        }
-        Ok(Value::Null)
+        crate::links::open(app, crate::links::APP_PAGE)
     }
     #[cfg(target_arch = "wasm32")]
     {

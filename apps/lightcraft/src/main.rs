@@ -403,7 +403,10 @@ fn main() -> eframe::Result {
                 // HDR display: SDR unless the surface, platform and display all allow HDR
                 hdr_display::report(cc.wgpu_render_state.as_ref().map(|r| r.target_format));
                 let mut app = LightcraftApp::new(session, services(cc, app_log_file.as_deref()));
-                app.set_startup_update_check(true);
+                // publik's build: no check against storytold's GitHub releases at start. Updates come
+                // from publik (publikhq.com/lightcraft and publik's launcher), so the app never offers to
+                // replace itself with a build that is not publik's.
+                app.set_startup_update_check(false);
                 if let Some(ui) = prefs {
                     app.ui = ui;
                 }
