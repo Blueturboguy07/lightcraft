@@ -17,3 +17,6 @@ plan/
 
 # Python tools import their public operator family.
 __pycache__/
+
+# The publik app token comes from the build secret PUBLIK_APP_TOKEN; it is never in the repository.
+publik-app-token.txt
