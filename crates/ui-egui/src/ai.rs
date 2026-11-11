@@ -201,9 +201,11 @@ pub fn frame(app: &mut LightcraftApp, _ctx: &egui::Context) {
         run.cancel.store(true, Ordering::Relaxed);
     }
     ai.frames = ai.frames.saturating_add(1);
-    // the first launch asks once the window is up (a few frames in); "Later" ends that for good
-    if !ai.first_run_checked && ai.frames > 3 {
+    // The first launch asks once the publik gate passed and the window is up (a few frames in):
+    // after "Use my own key" at the gate, the own-key form. "Later" ends that for good.
+    if !ai.first_run_checked && ai.frames > 3 && craft_publik::gate::passed() {
         ai.first_run_checked = true;
+        ai.state.reload_credential(); // the gate wrote it after this state was created
         if ai.state.wants_first_run() || ai.state.owes_first_card() {
             ai.open_setup = true;
         }
@@ -405,7 +407,7 @@ pub fn describe_body(app: &mut LightcraftApp, ui: &mut egui::Ui, ids: &[u64]) {
     };
     ai.describe.sync(&app.session.catalog, ids);
     if !ai.state.provider().is_set_up() {
-        ui.label("Describe Photo needs AI. Set it up first: publik API (no key to paste) or your own key.");
+        ui.label("Describe Photo needs AI. Set it up first: connect your publik plan (no key to paste) or use your own key.");
         ui.add_space(6.0);
         if crate::button::Button::new("Set Up AI…").primary().widget("button:aiSetUp").show(ui).clicked() {
             begin_setup(app, Dialog::AiDescribe { ids: ids.to_vec() });
@@ -784,8 +786,16 @@ mod tests {
     #[test]
     fn apply_writes_through_set_meta_and_undoes() {
         let mut app = LightcraftApp::new(lightcraft_engine::Session::with_demo(), Default::default());
-        let mut ai =
-            Ai::new(AppInfo { slug: "lightcraft-tests", name: "LightCraft", version: "0.0.0", app_token: "", dialects: &[], config_dir: None });
+        let mut ai = Ai::new(AppInfo {
+            slug: "lightcraft-tests",
+            name: "LightCraft",
+            version: "0.0.0",
+            app_token: "",
+            uses_ai: true,
+            endpoints: craft_publik::Endpoints::DEFAULT,
+            dialects: &[],
+            config_dir: None,
+        });
         ai.skip_first_run();
         app.ai = Some(ai);
         let id = app.session.visible_cloned()[0].0;

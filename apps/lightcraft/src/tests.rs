@@ -6,6 +6,7 @@ fn desktop_clear_color_stays_opaque_with_a_modal_open() {
         LightcraftApp::new(Session::new(), Services::default()),
         PrefsWriter::default(),
         None,
+        craft_publik::ui::Gate::for_test(publik::app_info(None)),
         #[cfg(target_os = "macos")]
         None,
     );
@@ -604,6 +605,7 @@ fn on_exit_ends_the_process_on_macos() {
             app,
             PrefsWriter::default(),
             None,
+            craft_publik::ui::Gate::for_test(publik::app_info(None)),
             #[cfg(target_os = "macos")]
             None,
         );
@@ -637,6 +639,7 @@ fn on_exit_removes_the_lock_owner_note() {
             LightcraftApp::new(session, Services::default()),
             PrefsWriter::default(),
             None,
+            craft_publik::ui::Gate::for_test(publik::app_info(None)),
             #[cfg(target_os = "macos")]
             None,
         );

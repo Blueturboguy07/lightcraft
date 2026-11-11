@@ -34,7 +34,10 @@ log = { workspace = true }
 # file, the calls and the setup flow (Photo ▸ AI ▸ Describe Photo…). Desktop only: it talks to the
 # network, through the system's curl, and only after the person sets it up and clicks.
 craft-update = { workspace = true }
-craft-publik = { git = "https://github.com/Blueturboguy07/craft-publik", rev = "7926858db80b68c988d6c325b5d287cbe74fc831", features = ["egui"] }
+# The publik module (pinned in the root Cargo.toml): publik API as the zero-setup AI option (or
+# the person's own key), the credential file, the calls, and the setup flow. Desktop only: it
+# talks to the network.
+craft-publik = { workspace = true }
 
 [dev-dependencies]
 # tests record why they skip (`cargo xtask ci` lists the skips)

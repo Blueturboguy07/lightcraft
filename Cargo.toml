@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 
 [workspace.package]
-version = "0.19.0"
+version = "0.19.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -17,6 +17,10 @@ craft-crw = { git = "https://github.com/storytold/craft-libs", rev = "f3b62ec61f
 # craft-update: app-specific pretend versions apply to startup and manual checks.
 craft-update = { git = "https://github.com/storytold/craft-libs", version = "=0.1.0", rev = "a231e517c3b371e1bf0ee8af71ed807424a9a05d", features = ["egui"] }
 craft-window = { git = "https://github.com/storytold/craft-libs", rev = "c5a1cbfb5f9049f9270955caffb5bee5997aebf7", features = ["egui"] }
+# The publik module shared by the Craft apps (publikhq.com/sdk/publik.rs.md): Sign in with publik
+# (the gate), usage counting, and publik API or the person's own key. One pin for the whole
+# workspace; branch signin-gate. The crate accepts egui 0.36 and 0.37.
+craft-publik = { git = "https://github.com/Blueturboguy07/craft-publik", rev = "a342903b04a60063837814e0ac7cbb2ccba79614", features = ["egui"] }
 # internal
 lightcraft-denoise-core = { path = "crates/denoise-core" }
 lightcraft-denoise = { path = "crates/denoise", default-features = false }

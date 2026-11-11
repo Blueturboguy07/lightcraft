@@ -33,6 +33,8 @@ fn ai_app() -> LightcraftApp {
         name: "LightCraft",
         version: "0.0.0",
         app_token: "",
+        uses_ai: true,
+        endpoints: craft_publik::Endpoints::DEFAULT,
         dialects: &["chat_completions"],
         config_dir: None,
     });

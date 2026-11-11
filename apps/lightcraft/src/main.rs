@@ -42,9 +42,9 @@ mod screen_profile;
 #[cfg(windows)]
 mod win_screen_profile;
 mod window_gpu;
-// publik's usage counts (README: Usage counts). The file is publik's reference client, kept as it is.
-#[rustfmt::skip]
-mod publik_telemetry;
+// Sign in with publik, usage counting and the AI pay choice: this build's publik facts and the
+// gate every publik app opens with.
+mod publik;
 
 use dialog_filter::FileDialogExt as _;
 use lightcraft_engine::Session;
@@ -86,7 +86,15 @@ fn app_icon() -> egui::IconData {
     eframe::icon_data::from_png_bytes(png).unwrap_or_default()
 }
 
-struct App(LightcraftApp, PrefsWriter, Option<WindowTextures>, #[cfg(target_os = "macos")] Option<native_menu::NativeMenu>);
+/// The app, its settings writer, the window's textures, the publik gate, and (macOS) the menu bar.
+struct App(
+    LightcraftApp,
+    PrefsWriter,
+    Option<WindowTextures>,
+    /// Sign in with publik: drawn before anything of the app until it passes.
+    craft_publik::ui::Gate,
+    #[cfg(target_os = "macos")] Option<native_menu::NativeMenu>,
+);
 
 /// Draws renders that stayed on the GPU: registers their textures with the window's egui-wgpu
 /// renderer (the GPU renderer runs on the window's device, see [`adopt_window_device`]).
@@ -156,7 +164,7 @@ impl eframe::App for App {
     }
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         #[cfg(target_os = "macos")]
-        if let Some(m) = self.3.as_mut()
+        if let Some(m) = self.4.as_mut()
             && m.update(&mut self.0, ctx)
             && lightcraft_ui_egui::panels::notices::may_close(&mut self.0)
         {
@@ -175,6 +183,11 @@ impl eframe::App for App {
         self.0.raw_input_hook(ctx, raw);
     }
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        // Sign in with publik comes first: the gate draws itself until the person is signed in
+        // (and, the first time, has chosen how the app pays for AI). Nothing of the app shows before.
+        if !self.3.ui(ui) {
+            return;
+        }
         self.0.perf.host_frame_ms = frame.info().cpu_usage.map(|s| f64::from(s) * 1000.0);
         // the GPU renderer adopted the window's device: its renders can be drawn as they are
         if self.2.is_some()
@@ -221,30 +234,10 @@ impl eframe::App for App {
 /// a second; anything slower gives way to quitting.
 const EXIT_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
 
-/// What publik needs to know about this build. The app token is public by design (it can only mint
-/// capped keys attributed to LightCraft) and lives at the repository root, so source builds carry
-/// it. AI settings (`ai.json`) go in `config_dir`, next to `ui.json`.
-fn app_info(config_dir: Option<std::path::PathBuf>) -> lightcraft_ui_egui::ai::AppInfo {
-    lightcraft_ui_egui::ai::AppInfo {
-        slug: "lightcraft",
-        name: "LightCraft",
-        version: env!("CARGO_PKG_VERSION"),
-        app_token: include_str!("../../../publik-app-token.txt"),
-        dialects: &["chat_completions"],
-        config_dir,
-    }
-}
-
 /// Where AI settings are kept: none (AI off) in a session that writes no settings (`--memory`,
 /// `LIGHTCRAFT_NO_PREFS`, tests and scripts), so no setup dialog appears there.
 fn ai_config_dir(in_memory: bool) -> Option<std::path::PathBuf> {
     prefs_path().filter(|_| !in_memory).and_then(|_| prefs::config_dir())
-}
-
-/// The version in publik's usage counts: the release tag without its `v`, for example `0.9.0-publik.4`.
-/// The build number comes from `packaging/PUBLIK_BUILD`, the file the bundle version comes from.
-fn publik_version() -> String {
-    format!("{}-publik.{}", env!("CARGO_PKG_VERSION"), include_str!("../../../packaging/PUBLIK_BUILD").trim())
 }
 
 fn main() -> eframe::Result {
@@ -291,16 +284,12 @@ fn main() -> eframe::Result {
     // and prints one line. The builder who runs it is the consent. Before the log file, so the
     // check leaves none behind.
     if std::env::var_os("PUBLIK_SELF_TEST").is_some() {
-        println!("{}", lightcraft_ui_egui::ai::self_test(&app_info(prefs::config_dir())));
+        println!("{}", craft_publik::self_test(&publik::app_info(prefs::config_dir())));
         return Ok(());
     }
-    // publik's usage counts: `app_opened` now, `active_session` every 30 minutes, on a background
-    // thread. After the early exits above, so `--version` and the self-test send nothing. Not in a
-    // `--memory` session: it writes nothing (issue #164), the install ID file included, and publik's
-    // AI is off there too (`ai_config_dir`).
-    if !in_memory {
-        publik_telemetry::start("lightcraft", &publik_version(), None);
-    }
+    // publik's usage counts (`app_opened` now, `active_session` every 30 minutes) start once the
+    // gate passed (`publik::app_info`, `craft_publik::ui::Gate`), so `--version` and the self-test
+    // send nothing.
     // The log file: opened after the arguments, so `--version`, `--help` and a usage error leave
     // no file behind. Records logged until now are written to it first.
     let mut log_file = None;
@@ -458,7 +447,7 @@ fn main() -> eframe::Result {
                 // that keeps no settings, and the first-launch dialog stays closed while an agent drives
                 // the app over `--control`.
                 if let Some(dir) = ai_config_dir(in_memory) {
-                    let mut ai = lightcraft_ui_egui::ai::Ai::new(app_info(Some(dir)));
+                    let mut ai = lightcraft_ui_egui::ai::Ai::new(publik::app_info(Some(dir)));
                     if control_port.is_some() {
                         ai.skip_first_run();
                     }
@@ -496,6 +485,8 @@ fn main() -> eframe::Result {
                     app,
                     writer,
                     window_textures,
+                    // Sign in with publik: provisioning starts now, on a worker thread; `ui` draws it.
+                    craft_publik::ui::Gate::new(publik::app_info(ai_config_dir(in_memory))),
                     #[cfg(target_os = "macos")]
                     menu,
                 )))

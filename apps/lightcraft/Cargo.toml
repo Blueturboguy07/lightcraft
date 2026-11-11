@@ -18,8 +18,9 @@ rawnind-model = ["denoise", "lightcraft-engine/rawnind-model"]
 heif = ["lightcraft-codecs/heif"]
 
 [dependencies]
-# publik's usage counts (src/publik_telemetry.rs): the HTTP client that file needs.
-ureq = "2"
+# The publik module (pinned in the root Cargo.toml): Sign in with publik at start-up (`src/publik.rs`),
+# usage counting, and the AI pay choice.
+craft-publik = { workspace = true }
 lightcraft-engine = { workspace = true, features = ["sam"] }
 lightcraft-sysmem = { workspace = true }
 lightcraft-ui-egui = { workspace = true }
